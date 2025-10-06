@@ -1,0 +1,310 @@
+// main.cpp
+#include <Wt/WApplication.h>
+#include <Wt/WContainerWidget.h>
+#include <Wt/WPushButton.h>
+#include <Wt/WImage.h>
+#include <Wt/WText.h>
+#include <Wt/WLineEdit.h>
+#include <Wt/WComboBox.h>
+#include <Wt/WStackedWidget.h>
+#include <Wt/WVBoxLayout.h>
+#include <Wt/WHBoxLayout.h>
+#include <Wt/WLabel.h>
+#include <Wt/WBreak.h>
+#include <Wt/WLength.h>
+#include <Wt/WTable.h>
+#include <cmath>
+#include <vector>
+#include <sstream>
+#include <iomanip>
+
+using namespace Wt;
+
+// Utility: format double with 2 decimals
+static std::string fmt2(double x) {
+    std::ostringstream os;
+    os << std::fixed << std::setprecision(2) << x;
+    return os.str();
+}
+
+class InterestApp : public WApplication {
+public:
+    InterestApp(const WEnvironment& env) : WApplication(env) {
+        setTitle("Aplikasi Penghitung Bunga");
+        root()->setStyleClass("root");
+
+        // stacked widget untuk pindah antar tampilan
+        stack_ = root()->addWidget(std::make_unique<WStackedWidget>());
+        stack_->setStyleClass("stack");
+
+        createHomeView();
+        createMenuView();
+        createInputView();
+        createOutputView();
+
+        stack_->setCurrentIndex(0); // tampilkan home
+    }
+
+private:
+    WStackedWidget *stack_;
+
+    // --- Komponen untuk Input / Output ---
+    WLineEdit *inputPrincipal_ = nullptr;
+    WLineEdit *inputPeriods_ = nullptr;
+    WComboBox *comboPeriodUnit_ = nullptr; // "Per Bulan" / "Per Tahun"
+    WLineEdit *inputRate_ = nullptr; // persentase per periode
+    bool isCompound_ = false;
+
+    // output widgets
+    WText *outputSummary_ = nullptr;
+    WTable *outputTable_ = nullptr;
+
+    void createHomeView() {
+        auto container = stack_->addWidget(std::make_unique<WContainerWidget>());
+        container->setPadding(50);
+
+        // kiri-atas tombol Keluar
+        auto cornerLeft = container->addWidget(std::make_unique<WContainerWidget>());
+        cornerLeft->setStyleClass("corner-left");
+        cornerLeft->addWidget(std::make_unique<WPushButton>("Keluar"))
+            ->clicked().connect([=](){ this->quit(); });
+
+        // pusat logo, nama, tombol
+        auto v = container->addWidget(std::make_unique<WContainerWidget>());
+        v->setStyleClass("home-center");
+        v->setMargin(StyleUnit::Auto, All); // center-ish
+
+        auto logo = v->addWidget(std::make_unique<WImage>("logo.png"));
+        logo->setAlternateText("Logo");
+        logo->setInline(false);
+        logo->resize(200,200);
+
+        v->addWidget(std::make_unique<WBreak>());
+        v->addWidget(std::make_unique<WText>("<h2>Aplikasi Hitung Bunga</h2>"));
+
+        v->addWidget(std::make_unique<WBreak>());
+        auto btnMenu = v->addWidget(std::make_unique<WPushButton>("Klik Menu"));
+        btnMenu->clicked().connect([=](){ stack_->setCurrentIndex(1); });
+    }
+
+    void createMenuView() {
+        auto container = stack_->addWidget(std::make_unique<WContainerWidget>());
+        container->setPadding(20);
+
+        // atas: logo kiri, nama di samping
+        auto top = container->addWidget(std::make_unique<WContainerWidget>());
+        auto topLayout = top->setLayout(std::make_unique<WHBoxLayout>());
+        auto logo = top->addWidget(std::make_unique<WImage>("logo.png"));
+        logo->resize(60,60);
+        top->addWidget(std::make_unique<WText>("<h3 style='margin-left:10px'>Aplikasi Hitung Bunga</h3>"));
+
+        top->addWidget(std::make_unique<WBreak>());
+
+        container->addWidget(std::make_unique<WBreak>());
+
+        // tombol pilihan
+        auto btnSingle = container->addWidget(std::make_unique<WPushButton>("Bunga Tunggal"));
+        btnSingle->setMargin(10, Side::Top);
+
+        auto btnCompound = container->addWidget(std::make_unique<WPushButton>("Bunga Majemuk"));
+        btnCompound->setMargin(10, Side::Top);
+
+        btnSingle->clicked().connect([=]() {
+            isCompound_ = false;
+            stack_->setCurrentIndex(2);
+        });
+
+        btnCompound->clicked().connect([=]() {
+            isCompound_ = true;
+            stack_->setCurrentIndex(2);
+        });
+
+        // back di kiri bawah
+        auto bottom = container->addWidget(std::make_unique<WContainerWidget>());
+        bottom->setStyleClass("menu-bottom");
+        auto backBtn = bottom->addWidget(std::make_unique<WPushButton>("Back"));
+        backBtn->clicked().connect([=](){ stack_->setCurrentIndex(0); });
+    }
+
+    void createInputView() {
+        auto container = stack_->addWidget(std::make_unique<WContainerWidget>());
+        container->setPadding(20);
+
+        // header kecil
+        auto top = container->addWidget(std::make_unique<WContainerWidget>());
+        auto topLayout = top->setLayout(std::make_unique<WHBoxLayout>());
+        auto logo = top->addWidget(std::make_unique<WImage>("logo.png"));
+        logo->resize(50,50);
+        top->addWidget(std::make_unique<WText>("<h4 style='margin-left:10px'>Aplikasi Hitung Bunga</h4>"));
+
+        container->addWidget(std::make_unique<WBreak>());
+
+        // form input
+        auto form = container->addWidget(std::make_unique<WContainerWidget>());
+        form->setStyleClass("form");
+
+        form->addWidget(std::make_unique<WText>("<b>Jumlah Hutang (Rp):</b>"));
+        inputPrincipal_ = form->addWidget(std::make_unique<WLineEdit>());
+        inputPrincipal_->setPlaceholderText("Contoh: 1000000");
+
+        form->addWidget(std::make_unique<WBreak>());
+
+        form->addWidget(std::make_unique<WText>("<b>Jangka Waktu:</b>"));
+        inputPeriods_ = form->addWidget(std::make_unique<WLineEdit>());
+        inputPeriods_->setPlaceholderText("Masukkan angka (mis. 12)");
+
+        comboPeriodUnit_ = form->addWidget(std::make_unique<WComboBox>());
+        comboPeriodUnit_->addItem("Per Bulan");
+        comboPeriodUnit_->addItem("Per Tahun");
+
+        form->addWidget(std::make_unique<WBreak>());
+
+        form->addWidget(std::make_unique<WText>("<b>Persentase Bunga (per periode) % :</b>"));
+        inputRate_ = form->addWidget(std::make_unique<WLineEdit>());
+        inputRate_->setPlaceholderText("Contoh: 1.5 untuk 1.5% per periode");
+
+        form->addWidget(std::make_unique<WBreak>());
+
+        // tombol bawah: Back (kiri) dan Lanjutkan (kanan)
+        auto bottom = container->addWidget(std::make_unique<WContainerWidget>());
+        auto bottomLayout = bottom->setLayout(std::make_unique<WHBoxLayout>());
+
+        auto back = bottom->addWidget(std::make_unique<WPushButton>("Back"));
+        back->clicked().connect([=](){ stack_->setCurrentIndex(1); });
+
+        bottomLayout->addStretch(1);
+
+        auto lanjut = bottom->addWidget(std::make_unique<WPushButton>("Lanjutkan"));
+        lanjut->clicked().connect([=](){ onCalculate(); });
+    }
+
+    void createOutputView() {
+        auto container = stack_->addWidget(std::make_unique<WContainerWidget>());
+        container->setPadding(20);
+
+        // header
+        auto top = container->addWidget(std::make_unique<WContainerWidget>());
+        auto topLayout = top->setLayout(std::make_unique<WHBoxLayout>());
+        auto logo = top->addWidget(std::make_unique<WImage>("logo.png"));
+        logo->resize(50,50);
+        top->addWidget(std::make_unique<WText>("<h4 style='margin-left:10px'>Hasil Perhitungan</h4>"));
+
+        container->addWidget(std::make_unique<WBreak>());
+
+        outputSummary_ = container->addWidget(std::make_unique<WText>(""));
+
+        container->addWidget(std::make_unique<WBreak>());
+        container->addWidget(std::make_unique<WBreak>());
+
+        outputTable_ = container->addWidget(std::make_unique<WTable>());
+        outputTable_->setHeaderCount(1);
+        outputTable_->setStyleClass("table");
+
+        container->addWidget(std::make_unique<WBreak>());
+
+        // tombol bawah: Back (kiri) dan Keluar (tengah)
+        auto bottom = container->addWidget(std::make_unique<WContainerWidget>());
+        auto bottomLayout = bottom->setLayout(std::make_unique<WHBoxLayout>());
+
+        auto back = bottom->addWidget(std::make_unique<WPushButton>("Back"));
+        back->clicked().connect([=](){ stack_->setCurrentIndex(2); });
+
+        bottomLayout->addStretch(1);
+
+        auto keluar = bottom->addWidget(std::make_unique<WPushButton>("Keluar"));
+        keluar->clicked().connect([=](){ this->quit(); });
+    }
+
+    // Validasi input sederhana, lalu hitung & tampilkan
+    void onCalculate() {
+        // ambil nilai
+        double P = 0;
+        double n = 0;
+        double ratePercent = 0;
+
+        try {
+            P = std::stod(inputPrincipal_->text().toUTF8());
+            n = std::stod(inputPeriods_->text().toUTF8());
+            ratePercent = std::stod(inputRate_->text().toUTF8());
+        } catch(...) {
+            // Tampilkan error singkat
+            outputSummary_->setText("<span style='color:red'>Input tidak valid. Pastikan semua kolom diisi angka.</span>");
+            stack_->setCurrentIndex(3);
+            return;
+        }
+
+        if (P <= 0 || n <= 0) {
+            outputSummary_->setText("<span style='color:red'>Jumlah hutang dan jangka waktu harus lebih besar dari 0.</span>");
+            stack_->setCurrentIndex(3);
+            return;
+        }
+
+        // rate per periode (decimal)
+        double r = ratePercent / 100.0;
+
+        // Jika user memilih Per Tahun tetapi ingin menampilkan per bulan nanti?
+        // Kita interpretasikan: rate yang dimasukkan sesuai dengan pilihan (per bulan atau per tahun)
+        std::string unit = comboPeriodUnit_->currentText().toUTF8();
+
+        if (!isCompound_) {
+            // Bunga tunggal: total bunga = P * r * n, total bayar = P + bunga
+            double totalInterest = P * r * n;
+            double totalToPay = P + totalInterest;
+
+            std::ostringstream s;
+            s << "<b>Bunga Tunggal</b><br/>";
+            s << "Jumlah hutang: Rp " << fmt2(P) << "<br/>";
+            s << "Periode: " << fmt2(n) << " (" << unit << ")<br/>";
+            s << "Persentase per periode: " << fmt2(ratePercent) << "%<br/>";
+            s << "Total bunga: Rp " << fmt2(totalInterest) << "<br/>";
+            s << "Total yang harus dibayar: Rp " << fmt2(totalToPay) << "<br/>";
+
+            outputSummary_->setText(s.str());
+
+            // kosongkan tabel
+            outputTable_->clear();
+            outputTable_->setHeaderCount(0);
+        } else {
+            // Bunga majemuk: A = P * (1 + r)^n
+            double amount = P * std::pow(1.0 + r, n);
+
+            std::ostringstream s;
+            s << "<b>Bunga Majemuk</b><br/>";
+            s << "Jumlah hutang awal: Rp " << fmt2(P) << "<br/>";
+            s << "Periode: " << fmt2(n) << " (" << unit << ")<br/>";
+            s << "Persentase per periode: " << fmt2(ratePercent) << "%<br/>";
+            s << "Jumlah total (akhir): Rp " << fmt2(amount) << "<br/>";
+            s << "Total bunga (akhir - pokok): Rp " << fmt2(amount - P) << "<br/>";
+
+            outputSummary_->setText(s.str());
+
+            // tabel bunga tiap periode
+            outputTable_->clear();
+            outputTable_->setHeaderCount(1);
+            outputTable_->elementAt(0,0)->addWidget(std::make_unique<WText>("#"));
+            outputTable_->elementAt(0,1)->addWidget(std::make_unique<WText>("Saldo Akhir Periode"));
+            outputTable_->elementAt(0,2)->addWidget(std::make_unique<WText>("Bunga Periode"));
+
+            double prev = P;
+            for (int i = 1; i <= static_cast<int>(n); ++i) {
+                double bal = P * std::pow(1.0 + r, i);
+                double interestThis = bal - prev;
+                int row = outputTable_->rowCount();
+                outputTable_->elementAt(row, 0)->addWidget(std::make_unique<WText>(std::to_string(i)));
+                outputTable_->elementAt(row, 1)->addWidget(std::make_unique<WText>("Rp " + fmt2(bal)));
+                outputTable_->elementAt(row, 2)->addWidget(std::make_unique<WText>("Rp " + fmt2(interestThis)));
+                prev = bal;
+            }
+        }
+
+        stack_->setCurrentIndex(3);
+    }
+};
+
+std::unique_ptr<WApplication> createApp(const WEnvironment& env) {
+    return std::make_unique<InterestApp>(env);
+}
+
+int main(int argc, char **argv) {
+    return WRun(argc, argv, &createApp);
+}
