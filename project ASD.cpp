@@ -2,13 +2,22 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <windows.h> // Untuk fungsi Sleep() (Windows)
 
 #define MAX_PERIODS_DISPLAY 240  
-
 
 void clear_stdin() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
+}
+
+void running_text(const char *text, int delay_ms) {
+    for (int i = 0; text[i] != '\0'; i++) {
+        printf("%c", text[i]);
+        fflush(stdout);
+        Sleep(delay_ms); 
+    }
+    printf("\n");
 }
 
 void wait_enter() {
@@ -18,12 +27,12 @@ void wait_enter() {
 
 void print_logo() {
     printf("\033[34m============================================================\033[0m\n");
-    printf("\033[36m        APLIKASI PENGHITUNG BUNGA TUNGGAL DAN MAJEMUK\033[0m\n");
-    printf("\033[95m                     ---  BungaKu  ---\n\033[0m\n");
+    running_text("\033[35m       APLIKASI PENGHITUNG BUNGA TUNGGAL DAN MAJEMUK\033[0m", 40);
+        printf("\n");
+    running_text("\033[95m                     ---  BungaKu  ---\033[0m", 40);
+        printf("\n");
     printf("\033[34m============================================================\033[0m\n");
-
 }
-
 
 double input_double_positive(const char *prompt) {
     double x;
@@ -65,7 +74,7 @@ int choose_unit() {
     int choice;
 
     while (1) {
-        printf("\n\033[36mJangka waktu:\n\033[0m");
+        running_text("\n\033[36mJangka waktu:\n\033[0m", 30);
         printf("1) Per Bulan\n");
         printf("2) Per Tahun\n");
         printf("\033[32m   Pilihan (1-2): \033[0m");
@@ -80,7 +89,6 @@ int choose_unit() {
         printf("\033[91mPilihan tidak valid. Coba lagi.\n\033[0m");
     }
 }
-
 
 void print_currency(double value) {
     long long intPart = (long long) value;
@@ -122,12 +130,11 @@ void print_currency(double value) {
         printf("Rp %s", formatted);
 }
 
-
 void calc_simple(double P, double r, int n) {
     double totalInterest = P * r * n;
     double totalToPay = P + totalInterest;
 
-    printf("\n\033[36m---------------- Hasil: Bunga Tunggal ----------------\n\033[0m");
+    running_text("\n\033[36m---------------- Hasil : Bunga Tunggal ----------------\n\033[0m", 30);
     printf("\033[32mJumlah hutang awal     : \033[0m"); print_currency(P); printf("\n");
     printf("\033[32mPeriode                : \033[0m%d\n", n);
     printf("\033[32mPersentase per periode : \033[0m%.6g%%\n", r * 100.0);
@@ -135,11 +142,10 @@ void calc_simple(double P, double r, int n) {
     printf("\033[32mTotal yang dibayar     : \033[0m"); print_currency(totalToPay); printf("\n");
 }
 
-
 void calc_compound(double P, double r, int n) {
     double amount = P * pow(1.0 + r, n);
 
-    printf("\033[36m\n---------------- Hasil: Bunga Majemuk ----------------\n\033[0m");
+    running_text("\033[36m\n---------------- Hasil : Bunga Majemuk ----------------\n\033[0m", 30);
     printf("\033[32mJumlah hutang awal     : \033[0m"); print_currency(P); printf("\n");
     printf("\033[32mPeriode                : \033[0m%d\n", n);
     printf("\033[32mPersentase per periode : \033[0m%.6g%%\n", r * 100.0);
@@ -176,7 +182,6 @@ void calc_compound(double P, double r, int n) {
     }
 }
 
-
 int main(void) {
     int mainChoice;
 
@@ -184,7 +189,10 @@ int main(void) {
         system("");  
         print_logo();
 
-        printf("\033[36mMenu Utama:\033[0m\n");
+        running_text("\033[33mSelamat datang di aplikasi BungaKu..... \033[0m", 40);
+        printf("\n");
+
+        running_text("\033[36mMenu Utama:\033[0m\n", 30);
         printf("1) Menu\n");
         printf("2)\033[91m Keluar\n\033[0m");
         printf("\033[32m   Pilihan (1-2): \033[0m");
@@ -197,14 +205,14 @@ int main(void) {
         clear_stdin();
 
         if (mainChoice == 2) {
-            printf("\033[38;2;255;80;1mTerima kasih Telah Menggunakan Aplikasi Penghitung BUNGAKU.\n\033[0m");
-            break;
+            running_text("\033[38;2;255;80;1mTerima Kasih Telah Menggunakan Aplikasi BUNGAKU.\033[0m", 40);
+        break;
         }
 
         else if (mainChoice == 1) {
             int menu2;
             while (1) {
-                printf("\033[36m\n--------------- Pilih Jenis Bunga ---------------\n\033[0m");
+                running_text("\033[36m\n--------------- Pilih Jenis Bunga ---------------\n\033[0m", 30);
                 printf("1) Bunga Tunggal\n");
                 printf("2) Bunga Majemuk\n");
                 printf("\033[91m3) Kembali\n\033[0m");
@@ -288,7 +296,7 @@ int main(void) {
                 else if (finalChoice == 2)
                     break;
                 else {
-                    printf("\033[38;2;255;80;80mTerima Kasih Telah Menggunakan Aplikasi Penghitung BUNGAKU.\033[0m\n");
+                    running_text("\033[38;2;255;80;1mTerima Kasih Telah Menggunakan Aplikasi BUNGAKU.\033[0m", 40);
                     exit(0);
                 }
             }
