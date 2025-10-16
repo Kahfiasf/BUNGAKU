@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <windows.h> // Untuk fungsi Sleep() (Windows)
+#include <windows.h> 
 
 #define MAX_PERIODS_DISPLAY 240  
 
@@ -308,3 +308,4 @@ int main(void) {
 
     return 0;
 }
+
